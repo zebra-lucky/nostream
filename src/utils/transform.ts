@@ -42,6 +42,7 @@ export const fromDBUser = applySpec<User>({
   balance: prop('balance'),
   createdAt: prop('created_at'),
   updatedAt: prop('updated_at'),
+  subscriptionPaidAt: prop('subscription_paid_at'),
 })
 
 export const fromBech32 = (input: string) => {

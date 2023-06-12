@@ -41,6 +41,7 @@ export class UserRepository implements IUserRepository {
       tos_accepted_at: prop('tosAcceptedAt'),
       updated_at: always(date),
       created_at: always(date),
+      subscription_paid_at: always(date),
     })(user)
 
     const query = client<DBUser>('users')
@@ -51,6 +52,7 @@ export class UserRepository implements IUserRepository {
           'pubkey',
           'balance',
           'created_at',
+          'subscription_paid_at',
         ])(row)
       )
 

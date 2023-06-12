@@ -7,6 +7,7 @@ export interface User {
   tosAcceptedAt?: Date | null
   createdAt: Date
   updatedAt: Date
+  subscriptionPaidAt: Date
 }
 
 export interface DBUser {
@@ -15,4 +16,5 @@ export interface DBUser {
   balance: bigint
   created_at: Date
   updated_at: Date
+  subscription_paid_at: Date
 }

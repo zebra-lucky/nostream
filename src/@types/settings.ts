@@ -134,11 +134,13 @@ export interface FeeSchedule {
   description?: string
   amount: bigint
   whitelists?: FeeScheduleWhitelists
+  period?: number
 }
 
 export interface FeeSchedules {
   admission: FeeSchedule[]
   publication: FeeSchedule[]
+  subscription: FeeSchedule[]
 }
 
 export interface Payments {

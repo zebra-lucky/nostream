@@ -17,6 +17,16 @@ payments:
             - replace-with-your-pubkey-in-hex
           event_kinds:
             - 9735 # Nip-57 Lightning Zap Receipts
+    subscription:
+      - enabled: false
+        description: Subscription fee charged per public key per period in msats (1000 msats = 1 satoshi)
+        amount: 2000000
+        period: 2592000
+        whitelists:
+          pubkeys:
+            - replace-with-your-pubkey-in-hex
+          event_kinds:
+            - 9735 # Nip-57 Lightning Zap Receipts
 paymentsProcessors:
   zebedee:
     baseURL: https://api.zebedee.io/

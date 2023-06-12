@@ -1,4 +1,5 @@
 export enum FeeSchedules {
   ADMISSION = 'admission',
-  PUBLICATION = 'publication'
+  PUBLICATION = 'publication',
+  SUBSCRIPTION = 'subscription'
 }

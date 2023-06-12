@@ -52,11 +52,11 @@ export const rootRequestHandler = (request: Request, response: Response, next: N
           return {
             ...prev,
             [feeName]: feeSchedules.reduce((fees, fee) => (fee.enabled)
-              ? [...fees, { amount: fee.amount, unit: 'msats' }]
+              ? [...fees, { amount: fee.amount, unit: 'msats', period: fee.period }]
               : fees, []),
           }
 
-        }, {} as Record<string, { amount: number, unit: string }>),
+        }, {} as Record<string, { amount: number, unit: string, period: number }>),
     }
 
     response

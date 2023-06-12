@@ -31,6 +31,9 @@ dist
 # IDE - VSCode
 .vscode/*
 
+# Vim editor swap files
+*.swp
+
 # Env files
 *.env
 

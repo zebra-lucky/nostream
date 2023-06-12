@@ -64,6 +64,13 @@ export class EventMessageHandler implements IMessageHandler {
       return
     }
 
+    reason = await this.isUserSubscriptionPaid(event)
+    if (reason) {
+      debug('event %s rejected: %s', event.id, reason)
+      this.webSocket.emit(WebSocketAdapterEvent.Message, createCommandResult(event.id, false, reason))
+      return
+    }
+
     const strategy = this.strategyFactory([event, this.webSocket])
 
     if (typeof strategy?.execute !== 'function') {
@@ -285,6 +292,39 @@ export class EventMessageHandler implements IMessageHandler {
     const minBalance = currentSettings.limits?.event?.pubkey?.minBalance ?? 0n
     if (minBalance > 0n && user.balance < minBalance) {
       return 'blocked: insufficient balance'
+    }
+  }
+
+  protected async isUserSubscriptionPaid(event: Event): Promise<string | undefined> {
+    const currentSettings = this.settings()
+    if (!currentSettings.payments?.enabled) {
+      return
+    }
+
+    if (this.getRelayPublicKey() === event.pubkey) {
+      return
+    }
+
+    const isApplicableFee = (feeSchedule: FeeSchedule) =>
+      feeSchedule.enabled
+      && !feeSchedule.whitelists?.pubkeys?.some((prefix) => event.pubkey.startsWith(prefix))
+      && !feeSchedule.whitelists?.event_kinds?.some(isEventKindOrRangeMatch(event))
+
+    const feeSchedules = currentSettings.payments?.feeSchedules?.subscription?.filter(isApplicableFee)
+    if (!Array.isArray(feeSchedules) || !feeSchedules.length) {
+      return
+    }
+
+    const user = await this.userRepository.findByPubkey(event.pubkey)
+    const now = Math.floor(Date.now()/1000)
+    const period = currentSettings.payments?.feeSchedules?.subscription?.period
+    if (
+      !user ||
+      !user.subscriptionPaidAt ||
+      !period ||
+      user.subscriptionPaidAt.valueOf() < now - period
+    ) {
+      return 'blocked: pubkey subscription fee is not paid'
     }
   }
 
