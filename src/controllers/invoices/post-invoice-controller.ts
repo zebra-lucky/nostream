@@ -69,7 +69,8 @@ export class PostInvoiceController implements IController {
     }
 
     const isAdmissionInvoice = request.body?.feeSchedule === 'admission'
-    if (!isAdmissionInvoice) {
+    const isSubscriptionInvoice = request.body?.feeSchedule === 'subscription'
+    if (!(isAdmissionInvoice || isSubscriptionInvoice)) {
       response
         .status(400)
         .setHeader('content-type', 'text/plain; charset=utf8')
@@ -112,38 +113,78 @@ export class PostInvoiceController implements IController {
 
     const isApplicableFee = (feeSchedule: FeeSchedule) => feeSchedule.enabled
       && !feeSchedule.whitelists?.pubkeys?.some((prefix) => pubkey.startsWith(prefix))
-    const admissionFee = currentSettings.payments?.feeSchedules.admission
-      .filter(isApplicableFee)
 
-    if (!Array.isArray(admissionFee) || !admissionFee.length) {
-      response
-        .status(400)
-        .setHeader('content-type', 'text/plain; charset=utf8')
-        .send('No admission fee required')
+    let amount
+    let feeType
+    if (isAdmissionInvoice) {
+      const admissionFee = currentSettings.payments?.feeSchedules.admission
+        .filter(isApplicableFee)
 
-      return
-    }
+      if (!Array.isArray(admissionFee) || !admissionFee.length) {
+        response
+          .status(400)
+          .setHeader('content-type', 'text/plain; charset=utf8')
+          .send('No admission fee required')
 
-    const minBalance = currentSettings.limits?.event?.pubkey?.minBalance
-    const user = await this.userRepository.findByPubkey(pubkey)
-    if (user && user.isAdmitted && (!minBalance || user.balance >= minBalance)) {
-      response
-        .status(400)
-        .setHeader('content-type', 'text/plain; charset=utf8')
-        .send('User is already admitted.')
+        return
+      }
 
-      return
+      const minBalance = currentSettings.limits?.event?.pubkey?.minBalance
+      const user = await this.userRepository.findByPubkey(pubkey)
+      if (user && user.isAdmitted && (!minBalance || user.balance >= minBalance)) {
+        response
+          .status(400)
+          .setHeader('content-type', 'text/plain; charset=utf8')
+          .send('User is already admitted.')
+
+        return
+      }
+
+      amount = admissionFee.reduce((sum, fee) => {
+        return fee.enabled && !fee.whitelists?.pubkeys?.includes(pubkey)
+          ? BigInt(fee.amount) + sum
+          : sum
+      }, 0n)
+
+      feeType = 'Admission'
+    } else if (isSubscriptionInvoice) {
+      const subscriptionFee = currentSettings.payments?.feeSchedules.subscription
+        .filter(isApplicableFee)
+
+      if (!Array.isArray(subscriptionFee) || !subscriptionFee.length) {
+        response
+          .status(400)
+          .setHeader('content-type', 'text/plain; charset=utf8')
+          .send('No subscription fee required')
+
+        return
+      }
+
+      const user = await this.userRepository.findByPubkey(pubkey)
+      const now = Math.floor(Date.now()/1000)
+      const period = subscriptionFee[0].period
+      if (
+        user &&
+        user.subscriptionPaidAt &&
+        user.subscriptionPaidAt.valueOf() >= now - period
+      ) {
+        response
+          .status(400)
+          .setHeader('content-type', 'text/plain; charset=utf8')
+          .send('User is already subscribed.')
+
+        return
+      }
+
+      amount = BigInt(subscriptionFee[0].amount)
+
+      feeType = 'Subscription'
     }
 
     let invoice: Invoice
-    const amount = admissionFee.reduce((sum, fee) => {
-      return fee.enabled && !fee.whitelists?.pubkeys?.includes(pubkey)
-        ? BigInt(fee.amount) + sum
-        : sum
-    }, 0n)
 
     try {
-      const description = `${relayName} Admission Fee for ${toBech32('npub')(pubkey)}`
+      const description = `${relayName} ${feeType} Fee for ${toBech32('npub')(pubkey)}`
 
       invoice = await this.paymentsService.createInvoice(
         pubkey,
