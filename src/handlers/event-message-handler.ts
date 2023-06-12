@@ -317,7 +317,7 @@ export class EventMessageHandler implements IMessageHandler {
 
     const user = await this.userRepository.findByPubkey(event.pubkey)
     const now = Math.floor(Date.now()/1000)
-    const period = currentSettings.payments?.feeSchedules?.subscription?.period
+    const period = feeSchedules[0].period
     if (
       !user ||
       !user.subscriptionPaidAt ||

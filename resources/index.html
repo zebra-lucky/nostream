@@ -9,12 +9,12 @@
   </head>
   <body lang="en" onload="onLoad()">
     <main class="container">
-      <form method="post" action="/invoices">
-        <div class="row">
-          <div class="col">
-            <h1 class="mt-4 mb-4 text-center text-nowrap">{{name}}</h1>
-          </div>
+      <div class="row">
+        <div class="col">
+          <h1 class="mt-4 mb-4 text-center text-nowrap">{{name}}</h1>
         </div>
+      </div>
+      <form id="admissionForm" class="d-none" method="post" action="/invoices">
         <div class="row">
           <div class="col text-center">
             <div class="row">
@@ -38,14 +38,14 @@
             <div class="card-body">
               <div class="d-flex flex-column mb-4">
                 <label for="pubkey" class="h5">Your Nostr public key</label>
-                <input type="text" name="pubkey" class="form-control form-control-sm" id="pubkey" placeholder="npub... or hex..." pattern="^([0-9a-f]{64}|npub1[ac-hj-np-z02-9]+)$" required>
-                <div id="pubkeyAfterHelpBlock" class="form-text">
+                <input type="text" name="pubkey" class="form-control form-control-sm" id="admissionPubkey" placeholder="npub... or hex..." pattern="^([0-9a-f]{64}|npub1[ac-hj-np-z02-9]+)$" required>
+                <div id="admissionPubkeyAfterHelpBlock" class="form-text">
                   Hex or npub formats accepted.
                 </div>
               </div>
               <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="tosAccepted" name="tosAccepted" value="yes" required>
-                <label class="form-check-label" for="tosAccepted">
+                <input class="form-check-input" type="checkbox" id="admissionTosAccepted" name="tosAccepted" value="yes" required>
+                <label class="form-check-label" for="admissionTosAccepted">
                   I have read and agree to the <a href="#" class="card-link" data-bs-toggle="modal" data-bs-target="#tosModal">Terms of Service</a>
                 </label>
               </div>
@@ -55,10 +55,62 @@
         <div class="row">
           <div class="d-flex justify-content-center mb-3">
             <input type="hidden" name="feeSchedule" value="admission" />
-            <button id="submitBtn" class="btn btn-lg btn-warning" type="submit">Pay {{amount}} sats</button>
+            <button id="admissionSubmitBtn" class="btn btn-lg btn-warning" type="submit">Pay {{admissionAmount}} sats</button>
           </div>
         </div>
-        <div class="row d-none" id="powered-by-zebedee">
+        <div class="row d-none" id="admission-powered-by-zebedee">
+          <div class="d-flex justify-content-center mb-3 mt-4">
+            <a href="https://zeb.gg/nostr-zbd-quickstart" target="_blank">
+              <img class="poweredbyzbd-img" src="https://cdn.zebedee.io/an/nostr/poweredbyzbd.png" />
+            </a>
+          </div>
+        </div>
+      </form>
+      <form id="subscriptionForm" class="d-none" method="post" action="/invoices">
+        <div class="row">
+          <div class="col text-center">
+            <div class="row">
+              <div class="d-flex justify-content-center mt-2">
+                <p class="description-text">
+                  This <a href="https://github.com/nostr-protocol/nostr">Nostr</a> relay <strong>requires</strong> a periodic
+                  subscription
+                  fee. <br /> Once payment is complete, you will be able to post and fetch events from this relay.
+                </p>
+              </div>
+              <div class="d-flex justify-content-center mb-1 mt-2">
+                <p class="description-text">
+                  Provide your Nostr public key to generate a Bitcoin Lightning invoice.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row justify-content-center">
+          <div class="card col col-md-10 col-lg-6 mb-4">
+            <div class="card-body">
+              <div class="d-flex flex-column mb-4">
+                <label for="pubkey" class="h5">Your Nostr public key</label>
+                <input type="text" name="pubkey" class="form-control form-control-sm" id="subscriptionPubkey" placeholder="npub... or hex..." pattern="^([0-9a-f]{64}|npub1[ac-hj-np-z02-9]+)$" required>
+                <div id="subscriptionPubkeyAfterHelpBlock" class="form-text">
+                  Hex or npub formats accepted.
+                </div>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="subscriptionTosAccepted" name="tosAccepted" value="yes" required>
+                <label class="form-check-label" for="subscriptionTosAccepted">
+                  I have read and agree to the <a href="#" class="card-link" data-bs-toggle="modal" data-bs-target="#tosModal">Terms of Service</a>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="d-flex justify-content-center mb-3">
+            <input type="hidden" name="feeSchedule" value="admission" />
+            <button id="subscriptionSubmitBtn" class="btn btn-lg btn-warning" type="submit">Pay {{subscriptionAmount}} sats</button>
+          </div>
+        </div>
+        <div class="row d-none" id="subscription-powered-by-zebedee">
           <div class="d-flex justify-content-center mb-3 mt-4">
             <a href="https://zeb.gg/nostr-zbd-quickstart" target="_blank">
               <img class="poweredbyzbd-img" src="https://cdn.zebedee.io/an/nostr/poweredbyzbd.png" />
@@ -136,7 +188,8 @@
           if (window.nostr && typeof window.nostr.getPublicKey === 'function') {
             window.nostr.getPublicKey().then((pubkey) => {
               console.log(pubkey)
-              document.getElementById('pubkey').setAttribute('value', pubkey)
+              document.getElementById('admissionPubkey').setAttribute('value', pubkey)
+              document.getElementById('subscriptionPubkey').setAttribute('value', pubkey)
             }).catch(console.error.bind(console))
           } else if (retries > 0) {
             setTimeout(() => getPubKey(retries - 1), 100)
@@ -148,8 +201,15 @@
 
       function onLoad() {
         setTimeout(attemptGetPubkey, 300)
+        if ({{admissionAmount}}) {
+          document.getElementById('admissionForm').classList.remove('d-none')
+        }
+        if ({{subscriptionAmount}}) {
+          document.getElementById('subscriptionForm').classList.remove('d-none')
+        }
         if (processor === 'zebedee') {
-          document.getElementById('powered-by-zebedee').classList.remove('d-none')
+          document.getElementById('admission-powered-by-zebedee').classList.remove('d-none')
+          document.getElementById('subscription-powered-by-zebedee').classList.remove('d-none')
         }
       }
     </script>

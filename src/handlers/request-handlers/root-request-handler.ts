@@ -69,8 +69,9 @@ export const rootRequestHandler = (request: Request, response: Response, next: N
   }
 
   const admissionFeeEnabled = path(['payments','feeSchedules','admission', '0', 'enabled'])(settings)
+  const subscriptionFeeEnabled = path(['payments','feeSchedules','subscription', '0', 'enabled'])(settings)
 
-  if (admissionFeeEnabled) {
+  if (admissionFeeEnabled || subscriptionFeeEnabled) {
     response.redirect(301, '/invoices')
   } else {
     response.status(200).setHeader('content-type', 'text/plain; charset=utf8').send('Please use a Nostr client to connect.')
