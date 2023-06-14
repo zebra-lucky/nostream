@@ -52,7 +52,6 @@ export class UserRepository implements IUserRepository {
           'pubkey',
           'balance',
           'created_at',
-          'subscription_paid_at',
         ])(row)
       )
 

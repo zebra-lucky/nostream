@@ -49,6 +49,9 @@ export class GetInvoiceController implements IController {
             .replaceAll('{{subscriptionAmount}}',
                         (BigInt(subscriptionFee?.amount | 0) / 1000n)
                           .toString())
+            .replaceAll('{{period_days}}',
+                        (Math.floor(subscriptionFee?.period | 0) / 86400)
+                          .toString())
         } else {
           res.status(404).send()
           return

@@ -173,11 +173,34 @@ export class PaymentsService implements IPaymentsService {
 
       const isApplicableFee = (feeSchedule: FeeSchedule) => feeSchedule.enabled
         && !feeSchedule.whitelists?.pubkeys?.some((prefix) => invoice.pubkey.startsWith(prefix))
-      const admissionFeeSchedules = currentSettings.payments?.feeSchedules?.admission ?? []
-      const admissionFeeAmount = admissionFeeSchedules
-        .reduce((sum, feeSchedule) => {
-          return sum + (isApplicableFee(feeSchedule) ? BigInt(feeSchedule.amount) : 0n)
-        }, 0n)
+
+      if (invoice.description.includes('Subscription')) {
+        console.log(1)
+        const subscriptionFeeSchedules = currentSettings.payments?.feeSchedules?.subscription ?? []
+        const subscriptionFeeAmount = subscriptionFeeSchedules[0].amount
+        console.log(2, subscriptionFeeAmount)
+        if (
+          subscriptionFeeAmount > 0n
+          && amountPaidMsat >= subscriptionFeeAmount
+        ) {
+          const now = new Date()
+          console.log(3, now)
+          await this.userRepository.upsert(
+            {
+              pubkey: invoice.pubkey,
+              subscriptionPaidAt: now,
+              tosAcceptedAt: now,
+              updatedAt: now,
+            },
+            transaction.transaction,
+          )
+        }
+      } else {
+        const admissionFeeSchedules = currentSettings.payments?.feeSchedules?.admission ?? []
+        const admissionFeeAmount = admissionFeeSchedules
+          .reduce((sum, feeSchedule) => {
+            return sum + (isApplicableFee(feeSchedule) ? BigInt(feeSchedule.amount) : 0n)
+          }, 0n)
 
         if (
           admissionFeeAmount > 0n
@@ -195,6 +218,7 @@ export class PaymentsService implements IPaymentsService {
             transaction.transaction,
           )
         }
+      }
 
       await transaction.commit()
     } catch (error) {
