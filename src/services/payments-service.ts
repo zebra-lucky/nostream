@@ -175,16 +175,13 @@ export class PaymentsService implements IPaymentsService {
         && !feeSchedule.whitelists?.pubkeys?.some((prefix) => invoice.pubkey.startsWith(prefix))
 
       if (invoice.description.includes('Subscription')) {
-        console.log(1)
         const subscriptionFeeSchedules = currentSettings.payments?.feeSchedules?.subscription ?? []
         const subscriptionFeeAmount = subscriptionFeeSchedules[0].amount
-        console.log(2, subscriptionFeeAmount)
         if (
           subscriptionFeeAmount > 0n
           && amountPaidMsat >= subscriptionFeeAmount
         ) {
           const now = new Date()
-          console.log(3, now)
           await this.userRepository.upsert(
             {
               pubkey: invoice.pubkey,
